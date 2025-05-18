@@ -7,6 +7,7 @@ type LogEntry = {
   magnitude: number
   frequency: number
   timestamp: string
+  triggered: boolean
 }
 
 export function AlertDisplay() {
@@ -21,9 +22,10 @@ export function AlertDisplay() {
         const data = await response.json()
         setLogs(data)
         
-        // Set latest alert if new data is received
-        if (data.length > 0 && (!latestAlert || data[data.length - 1].timestamp !== latestAlert.timestamp)) {
-          setLatestAlert(data[data.length - 1])
+        // Set latest alert if new triggered detection is received
+        const latestTriggered = data.filter((entry: LogEntry) => entry.triggered).pop()
+        if (latestTriggered && (!latestAlert || latestTriggered.timestamp !== latestAlert.timestamp)) {
+          setLatestAlert(latestTriggered)
         }
       } catch (error) {
         console.error('Error fetching logs:', error)
@@ -38,6 +40,9 @@ export function AlertDisplay() {
 
     return () => clearInterval(interval)
   }, [latestAlert])
+
+  // Filter logs to show only triggered events in history
+  const triggeredLogs = logs.filter(log => log.triggered)
 
   return (
     <div className="space-y-4">
@@ -60,7 +65,7 @@ export function AlertDisplay() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {logs.slice().reverse().map((log, index) => (
+            {triggeredLogs.slice().reverse().map((log, index) => (
               <div key={index} className="text-sm">
                 <span className="font-medium">{new Date(log.timestamp).toLocaleTimeString()}</span>
                 <span className="mx-2">|</span>
@@ -71,6 +76,11 @@ export function AlertDisplay() {
                 <span>Freq: {log.frequency.toFixed(2)} Hz</span>
               </div>
             ))}
+            {triggeredLogs.length === 0 && (
+              <div className="text-sm text-gray-500">
+                No detections yet
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

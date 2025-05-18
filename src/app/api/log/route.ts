@@ -6,6 +6,7 @@ let logs: Array<{
   magnitude: number
   frequency: number
   timestamp: string
+  triggered: boolean
 }> = []
 
 export async function POST(request: Request) {
@@ -20,8 +21,11 @@ export async function POST(request: Request) {
       )
     }
 
-    // Add to logs
-    logs.push(data)
+    // Add to logs with triggered flag (defaults to false if not provided)
+    logs.push({
+      ...data,
+      triggered: data.triggered || false
+    })
     
     // Keep only last 100 entries
     if (logs.length > 100) {
