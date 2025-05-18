@@ -1,5 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import { Providers } from './providers'
+import { Toaster } from 'sonner'
 
 export const metadata: Metadata = {
   title: 'Penguin Deterrence System',
@@ -13,7 +15,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Providers>
+          <Toaster />
+          {children}
+        </Providers>
+      </body>
     </html>
   )
 } 
