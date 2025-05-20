@@ -8,23 +8,15 @@ import {
   SignedOut,
   UserButton,
 } from '@clerk/nextjs'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { Sidebar } from '@/components/Sidebar'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-})
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Penguin Deterrence System',
-  description: 'A system for detecting and deterring penguins using audio analysis and deterrent devices',
+  description: 'Real-time penguin detection and deterrence system',
 }
 
 export default function RootLayout({
@@ -35,7 +27,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <body className={inter.className}>
           <div className="flex h-screen">
             <Sidebar />
             <div className="flex-1 flex flex-col">

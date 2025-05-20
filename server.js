@@ -1,26 +1,67 @@
-const { createServer } = require('http');
-const { parse } = require('url');
-const next = require('next');
-const { initializeSocket } = require('./src/lib/websocket/server');
+const express = require('express');
+const { SerialPort } = require('serialport');
+const { ReadlineParser } = require('@serialport/parser-readline');
+const cors = require('cors');
 
-const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev });
-const handle = app.getRequestHandler();
+const app = express();
+const port = 3001; // Different from your Next.js port
 
-app.prepare().then(() => {
-  const server = createServer((req, res) => {
-    const parsedUrl = parse(req.url, true);
-    handle(req, res, parsedUrl);
+// Enable CORS
+app.use(cors());
+app.use(express.json());
+
+// Store the latest microphone data
+let latestData = {
+  amplitude: 0,
+  frequency: 0,
+  timestamp: 0
+};
+
+// Configure serial port
+const serialPort = new SerialPort({
+  path: 'COM3', // Change this to match your ESP32's port
+  baudRate: 115200,
+  autoOpen: false
+});
+
+// Create parser
+const parser = serialPort.pipe(new ReadlineParser({ delimiter: '\r\n' }));
+
+// Handle serial data
+parser.on('data', (data) => {
+  try {
+    const parsedData = JSON.parse(data);
+    latestData = {
+      amplitude: parsedData.amplitude,
+      frequency: parsedData.frequency,
+      timestamp: parsedData.timestamp
+    };
+    console.log('Received data:', latestData);
+  } catch (error) {
+    console.error('Error parsing data:', error);
+  }
+});
+
+// Handle serial port errors
+serialPort.on('error', (err) => {
+  console.error('Serial port error:', err);
+});
+
+// API endpoint to get latest data
+app.get('/api/microphone', (req, res) => {
+  res.json(latestData);
+});
+
+// Start server
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+  
+  // Open serial port
+  serialPort.open((err) => {
+    if (err) {
+      console.error('Error opening port:', err);
+    } else {
+      console.log('Serial port opened successfully');
+    }
   });
-
-  // Initialize Socket.IO
-  initializeSocket(server);
-
-  server.listen(3000, (err) => {
-    if (err) throw err;
-    console.log('> Ready on http://localhost:3000');
-  });
-}).catch((err) => {
-  console.error('Error starting server:', err);
-  process.exit(1);
 }); 
