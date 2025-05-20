@@ -16,19 +16,27 @@ export default function TestPage() {
     timestamp: 0
   });
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('Fetching data...');
         const response = await fetch('http://localhost:3001/api/microphone');
         if (!response.ok) {
-          throw new Error('Failed to fetch data');
+          throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
         }
         const newData = await response.json();
+        console.log('Received data:', newData);
         setData(newData);
         setError(null);
+        setLastFetchTime(Date.now());
       } catch (err) {
+        console.error('Error fetching data:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -45,6 +53,12 @@ export default function TestPage() {
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+            Loading initial data...
           </div>
         )}
 
@@ -76,6 +90,9 @@ export default function TestPage() {
           <h2 className="text-xl font-semibold mb-4">Last Update</h2>
           <p className="text-gray-600">
             {new Date(data.timestamp).toLocaleTimeString()}
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Last fetch: {new Date(lastFetchTime).toLocaleTimeString()}
           </p>
         </div>
       </div>
