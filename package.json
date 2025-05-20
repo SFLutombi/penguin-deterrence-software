@@ -1,11 +1,11 @@
 {
-  "name": "penguin-deterence-system",
-  "version": "1.0.0",
+  "name": "penguin-deterrence-software",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node server.js",
+    "dev": "next dev",
     "build": "next build",
-    "start": "NODE_ENV=production node server.js",
+    "start": "next start",
     "lint": "next lint",
     "test:esp32": "node src/lib/esp32/websocket_test.js"
   },
@@ -16,31 +16,32 @@
   "dependencies": {
     "@clerk/nextjs": "^4.29.7",
     "@radix-ui/react-slot": "^1.2.2",
-    "@types/react": "^19.1.4",
-    "@types/react-dom": "^19.1.5",
-    "autoprefixer": "^10.4.14",
+    "@types/react": "^18.2.52",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.17",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "eslint": "^9.27.0",
-    "framer-motion": "^12.12.1",
-    "lucide-react": "^0.511.0",
-    "next": "^15.3.2",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.1.0",
+    "framer-motion": "^11.0.3",
+    "lucide-react": "^0.323.0",
+    "next": "14.1.0",
     "node-fetch": "^2.7.0",
-    "postcss": "^8.4.31",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "postcss": "^8.4.33",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "sonner": "^2.0.3",
+    "sonner": "^1.4.0",
     "tailwind-merge": "^3.3.0",
-    "tailwindcss": "^3.3.0"
+    "tailwindcss": "^3.4.1"
   },
   "devDependencies": {
-    "@types/node": "^22.15.18",
+    "@types/node": "^20.11.16",
     "@types/ws": "^8.18.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
+    "typescript": "^5.3.3",
     "ws": "^8.18.2"
   }
 }
