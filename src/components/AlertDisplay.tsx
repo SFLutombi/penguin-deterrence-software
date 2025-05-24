@@ -1,89 +1,109 @@
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useEffect, useState } from "react"
+'use client'
 
-type LogEntry = {
-  espId: string
-  magnitude: number
-  frequency: number
-  timestamp: string
-  triggered: boolean
+import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { AlertTriangle, Volume2, Activity } from 'lucide-react'
+
+interface Alert {
+  type: 'amplitude' | 'frequency'
+  message: string
+  value: number
+  threshold: number
+  timestamp: number
 }
 
 export function AlertDisplay() {
-  const [logs, setLogs] = useState<LogEntry[]>([])
-  const [latestAlert, setLatestAlert] = useState<LogEntry | null>(null)
+  const [alerts, setAlerts] = useState<Alert[]>([])
 
-  // Fetch logs periodically
   useEffect(() => {
-    const fetchLogs = async () => {
+    const fetchAlerts = async () => {
       try {
-        const response = await fetch('/api/log')
-        const data = await response.json()
-        setLogs(data)
-        
-        // Set latest alert if new triggered detection is received
-        const latestTriggered = data.filter((entry: LogEntry) => entry.triggered).pop()
-        if (latestTriggered && (!latestAlert || latestTriggered.timestamp !== latestAlert.timestamp)) {
-          setLatestAlert(latestTriggered)
+        const response = await fetch('http://localhost:3001/api/alerts')
+        if (!response.ok) {
+          throw new Error('Failed to fetch alerts')
         }
+        const data = await response.json()
+        setAlerts(data)
       } catch (error) {
-        console.error('Error fetching logs:', error)
+        console.error('Error fetching alerts:', error)
       }
     }
 
     // Initial fetch
-    fetchLogs()
+    fetchAlerts()
 
-    // Poll every 2 seconds
-    const interval = setInterval(fetchLogs, 2000)
+    // Poll for new alerts every second
+    const interval = setInterval(fetchAlerts, 1000)
 
     return () => clearInterval(interval)
-  }, [latestAlert])
+  }, [])
 
-  // Filter logs to show only triggered events in history
-  const triggeredLogs = logs.filter(log => log.triggered)
+  if (alerts.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-48 bg-gray-50 rounded-lg border border-gray-200">
+        <p className="text-gray-500">No alerts to display</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Latest Alert */}
-      {latestAlert && (
-        <Alert className="bg-yellow-50 border-yellow-200">
-          <AlertTitle>New Detection!</AlertTitle>
-          <AlertDescription>
-            ESP32 {latestAlert.espId} detected activity at {new Date(latestAlert.timestamp).toLocaleTimeString()}
-            <br />
-            Magnitude: {latestAlert.magnitude.toFixed(2)} | Frequency: {latestAlert.frequency.toFixed(2)} Hz
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Log History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Detection History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {triggeredLogs.slice().reverse().map((log, index) => (
-              <div key={index} className="text-sm">
-                <span className="font-medium">{new Date(log.timestamp).toLocaleTimeString()}</span>
-                <span className="mx-2">|</span>
-                <span>ESP32 {log.espId}</span>
-                <span className="mx-2">|</span>
-                <span>Mag: {log.magnitude.toFixed(2)}</span>
-                <span className="mx-2">|</span>
-                <span>Freq: {log.frequency.toFixed(2)} Hz</span>
+    <div className="space-y-4 max-h-[400px] overflow-y-auto">
+      <AnimatePresence>
+        {alerts.map((alert, index) => (
+          <motion.div
+            key={`${alert.timestamp}-${index}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className={`p-4 rounded-lg border ${
+              alert.type === 'amplitude' 
+                ? 'bg-red-50 border-red-200' 
+                : 'bg-yellow-50 border-yellow-200'
+            }`}
+          >
+            <div className="flex items-start space-x-3">
+              <div className={`p-2 rounded-full ${
+                alert.type === 'amplitude' 
+                  ? 'bg-red-100' 
+                  : 'bg-yellow-100'
+              }`}>
+                {alert.type === 'amplitude' ? (
+                  <Volume2 className="w-4 h-4 text-red-600" />
+                ) : (
+                  <Activity className="w-4 h-4 text-yellow-600" />
+                )}
               </div>
-            ))}
-            {triggeredLogs.length === 0 && (
-              <div className="text-sm text-gray-500">
-                No detections yet
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h3 className={`font-medium ${
+                    alert.type === 'amplitude' 
+                      ? 'text-red-900' 
+                      : 'text-yellow-900'
+                  }`}>
+                    {alert.type === 'amplitude' ? 'High Amplitude' : 'High Frequency'}
+                  </h3>
+                  <span className="text-sm text-gray-500">
+                    {new Date(alert.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+                <p className={`text-sm ${
+                  alert.type === 'amplitude' 
+                    ? 'text-red-600' 
+                    : 'text-yellow-600'
+                }`}>
+                  {alert.message}
+                </p>
+                <div className="mt-2 text-sm text-gray-500">
+                  <p>Value: {alert.value.toLocaleString()}{alert.type === 'frequency' ? ' Hz' : ''}</p>
+                  {alert.threshold && (
+                    <p>Threshold: {alert.threshold.toLocaleString()}{alert.type === 'frequency' ? ' Hz' : ''}</p>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   )
 } 

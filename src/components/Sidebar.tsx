@@ -6,8 +6,7 @@ import {
   LayoutDashboard, 
   BarChart2, 
   FileAudio, 
-  Settings,
-  Mic
+  Settings
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -26,11 +25,6 @@ const navigation = [
     name: 'Recordings',
     href: '/recordings',
     icon: FileAudio
-  },
-  {
-    name: 'Microphones',
-    href: '/microphones',
-    icon: Mic
   },
   {
     name: 'Settings',

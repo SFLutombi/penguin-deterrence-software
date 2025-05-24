@@ -8,6 +8,9 @@ interface MicrophoneData {
   frequency: number
   timestamp: number
   port: string
+  connected: boolean
+  lastUpdate: number
+  penguinDetected: boolean
 }
 
 interface MicrophoneDataProps {
@@ -19,130 +22,128 @@ export function MicrophoneData({ microphoneId }: MicrophoneDataProps) {
     amplitude: 0,
     frequency: 0,
     timestamp: 0,
-    port: ''
+    port: '',
+    connected: false,
+    lastUpdate: 0,
+    penguinDetected: false
   })
-  const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [lastFetchTime, setLastFetchTime] = useState<number>(0)
-  const [isOffline, setIsOffline] = useState(false)
 
   useEffect(() => {
+    let isMounted = true
+    
     const fetchData = async () => {
       try {
+        // Fetch microphone data
         const response = await fetch(`http://localhost:3001/api/microphones/${microphoneId}`)
         if (!response.ok) {
-          throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`)
+          throw new Error('Microphone not connected')
         }
-        const newData = await response.json()
-        console.log(`Received data for ${microphoneId}:`, newData)
-        setData(newData)
-        setError(null)
-        setLastFetchTime(Date.now())
         
-        // Check if microphone is offline based on data values
-        // A microphone is considered online if it has any non-zero data
-        const hasValidData = newData.amplitude !== 0 || newData.frequency !== 0
-        console.log(`${microphoneId} status:`, {
-          hasValidData,
-          amplitude: newData.amplitude,
-          frequency: newData.frequency,
-          isOffline: !hasValidData
-        })
-        setIsOffline(!hasValidData)
-      } catch (err) {
-        console.error(`Error fetching data for ${microphoneId}:`, err)
-        setError(err instanceof Error ? err.message : 'An error occurred')
-        setIsOffline(true)
+        const newData = await response.json()
+        
+        if (isMounted) {
+          setData(newData)
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.log(`[${microphoneId}] Not connected`)
+        }
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
-    // Fetch data every 100ms
+    // Initial fetch
+    fetchData()
+
+    // Set up polling interval
     const interval = setInterval(fetchData, 100)
-    return () => clearInterval(interval)
+
+    // Cleanup
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
   }, [microphoneId])
 
-  // Show loading state
   if (isLoading) {
     return (
-      <div className="bg-blue-100 p-4 rounded-lg shadow-md">
-        <div className="flex items-center justify-center space-x-2">
-          <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
-          <p className="text-lg font-semibold text-blue-700">Loading...</p>
+      <div className="bg-gray-50 p-4 rounded-lg animate-pulse">
+        <div className="flex items-center justify-center">
+          <div className="h-4 w-4 bg-blue-400 rounded-full animate-bounce"></div>
         </div>
       </div>
     )
   }
 
-  // Show error state
-  if (error) {
+  const cardClasses = `p-6 rounded-xl border transition-all duration-300 ${
+    !data.connected
+      ? 'bg-gray-50 border-gray-200'
+      : data.penguinDetected
+        ? 'bg-red-50 border-red-300 shadow-lg shadow-red-100 animate-pulse'
+        : 'bg-white border-gray-200 hover:shadow-lg'
+  }`
+
+  if (!data.connected) {
     return (
-      <div className="bg-red-100 p-4 rounded-lg shadow-md">
-        <div className="flex items-center justify-center space-x-2">
-          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <p className="text-lg font-semibold text-red-700">Error</p>
+      <div className={cardClasses}>
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center justify-center">
+            <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900">Microphone {microphoneId.slice(-1)}</h3>
+          <p className="text-sm text-gray-500">Not connected</p>
         </div>
-        <p className="text-sm text-red-600 mt-2 text-center">{error}</p>
       </div>
     )
   }
 
-  // Show offline state
-  if (isOffline) {
-    return (
-      <div className="bg-gray-100 p-4 rounded-lg shadow-md">
-        <div className="flex items-center justify-center space-x-2">
-          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <p className="text-lg font-semibold text-gray-700">Offline</p>
-        </div>
-        <p className="text-sm text-gray-500 mt-2 text-center">
-          Last values: {data.amplitude.toFixed(2)} / {data.frequency.toFixed(2)} Hz
-        </p>
-      </div>
-    )
-  }
-
-  // Show online state with data
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-center space-x-2">
-        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-        <p className="text-lg font-semibold text-green-700">Online</p>
-      </div>
+    <div className={cardClasses}>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium text-gray-900">
+            Microphone {microphoneId.slice(-1)}
+          </h3>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${data.penguinDetected ? 'bg-red-500' : 'bg-green-500'}`}></div>
+            <span className={`text-sm font-medium ${data.penguinDetected ? 'text-red-600' : 'text-green-600'}`}>
+              {data.penguinDetected ? 'Penguin Detected!' : 'No Penguins'}
+            </span>
+          </div>
+        </div>
 
-      <div className="flex flex-col space-y-4">
-        <div className="flex justify-between items-center">
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold text-gray-700">Amplitude</h2>
-            <motion.p 
-              className="text-3xl font-bold text-blue-600"
-              animate={{ scale: [1, 1.02, 1] }}
-              transition={{ duration: 0.5, repeat: Infinity }}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <p className="text-sm text-gray-500">Amplitude</p>
+            <motion.p
+              className="text-2xl font-bold text-blue-600"
+              animate={{ scale: data.penguinDetected ? [1, 1.05, 1] : 1 }}
+              transition={{ duration: 0.5 }}
             >
-              {data.amplitude.toFixed(2)}
+              {data.amplitude.toLocaleString()}
             </motion.p>
           </div>
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold text-gray-700">Frequency</h2>
-            <motion.p 
-              className="text-3xl font-bold text-green-600"
-              animate={{ scale: [1, 1.02, 1] }}
-              transition={{ duration: 0.5, repeat: Infinity }}
+
+          <div className="space-y-1">
+            <p className="text-sm text-gray-500">Frequency</p>
+            <motion.p
+              className="text-2xl font-bold text-green-600"
+              animate={{ scale: data.penguinDetected ? [1, 1.05, 1] : 1 }}
+              transition={{ duration: 0.5 }}
             >
-              {data.frequency.toFixed(2)} Hz
+              {data.frequency.toFixed(1)}
+              <span className="text-sm ml-1">Hz</span>
             </motion.p>
           </div>
         </div>
 
-        <div className="flex justify-between items-center text-sm text-gray-500">
-          <div>
-            <p>Last Update: {new Date(data.timestamp).toLocaleTimeString()}</p>
-            <p>Port: {data.port}</p>
-          </div>
-          <div>
-            <p>Last Fetch: {new Date(lastFetchTime).toLocaleTimeString()}</p>
-          </div>
+        <div className="text-xs text-gray-500 space-y-1">
+          <p>Port: {data.port}</p>
+          <p>Last Update: {new Date(data.lastUpdate).toLocaleTimeString()}</p>
         </div>
       </div>
     </div>
