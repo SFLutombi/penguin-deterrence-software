@@ -46,52 +46,52 @@ export default function TestPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Microphone Test Page</h1>
         
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
 
         {isLoading && (
-          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+          <div className="bg-secondary/10 border border-secondary text-secondary px-4 py-3 rounded mb-4">
             Loading initial data...
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <motion.div
-            className="bg-white p-6 rounded-lg shadow-md"
+            className="bg-card p-6 rounded-lg shadow-md"
             animate={{ scale: [1, 1.02, 1] }}
             transition={{ duration: 0.5, repeat: Infinity }}
           >
             <h2 className="text-xl font-semibold mb-4">Amplitude</h2>
-            <p className="text-4xl font-bold text-blue-600">
+            <p className="text-4xl font-bold text-secondary">
               {data.amplitude.toFixed(2)}
             </p>
           </motion.div>
 
           <motion.div
-            className="bg-white p-6 rounded-lg shadow-md"
+            className="bg-card p-6 rounded-lg shadow-md"
             animate={{ scale: [1, 1.02, 1] }}
             transition={{ duration: 0.5, repeat: Infinity }}
           >
             <h2 className="text-xl font-semibold mb-4">Frequency</h2>
-            <p className="text-4xl font-bold text-green-600">
+            <p className="text-4xl font-bold text-secondary">
               {data.frequency.toFixed(2)} Hz
             </p>
           </motion.div>
         </div>
 
-        <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
+        <div className="mt-6 bg-card p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">Last Update</h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             {new Date(data.timestamp).toLocaleTimeString()}
           </p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             Last fetch: {new Date(lastFetchTime).toLocaleTimeString()}
           </p>
         </div>

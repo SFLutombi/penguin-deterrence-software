@@ -3,98 +3,208 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useWebSocket } from '@/contexts/WebSocketContext'
+import { Line } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+)
 
 interface MicrophoneDataProps {
   microphoneId: 'microphone1' | 'microphone2' | 'microphone3'
 }
 
+const micIdMap = {
+  microphone1: 'm1',
+  microphone2: 'm2',
+  microphone3: 'm3',
+} as const;
+
+const MAX_DATA_POINTS = 50;
+
 export function MicrophoneData({ microphoneId }: MicrophoneDataProps) {
-  const { fftData, amplitudeData } = useWebSocket();
-  const [isConnected, setIsConnected] = useState(false);
+  const { microphoneData } = useWebSocket();
+  const micId = micIdMap[microphoneId];
+  const data = microphoneData[micId];
+  
   const [penguinDetected, setPenguinDetected] = useState(false);
+  const isConnected = Date.now() - data.lastUpdate < 5000;
 
-  // Update penguin detection based on frequency
+  // State for historical data
+  const [frequencyHistory, setFrequencyHistory] = useState<number[]>([]);
+  const [amplitudeHistory, setAmplitudeHistory] = useState<number[]>([]);
+  const [timeLabels, setTimeLabels] = useState<string[]>([]);
+
+  // Update historical data
   useEffect(() => {
-    if (fftData) {
-      // Check if frequency is in penguin range (1000-2500 Hz)
-      setPenguinDetected(fftData.frequency >= 1000 && fftData.frequency <= 2500);
+    if (data.fftData && data.amplitudeData) {
+      const now = new Date().toLocaleTimeString();
+      
+      setFrequencyHistory(prev => {
+        const newData = [...prev, data.fftData!.frequency];
+        return newData.slice(-MAX_DATA_POINTS);
+      });
+      
+      setAmplitudeHistory(prev => {
+        const newData = [...prev, data.amplitudeData!.value];
+        return newData.slice(-MAX_DATA_POINTS);
+      });
+      
+      setTimeLabels(prev => {
+        const newLabels = [...prev, now];
+        return newLabels.slice(-MAX_DATA_POINTS);
+      });
     }
-  }, [fftData]);
+  }, [data.fftData, data.amplitudeData]);
 
-  // Update connection status when we receive data
+  // Update penguin detection
   useEffect(() => {
-    if (fftData || amplitudeData) {
-      setIsConnected(true);
+    if (data.fftData) {
+      setPenguinDetected(data.fftData.frequency >= 1000 && data.fftData.frequency <= 2500);
     }
-  }, [fftData, amplitudeData]);
+  }, [data.fftData]);
 
-  const cardClasses = `p-6 rounded-xl border transition-all duration-300 ${
-    !isConnected
-      ? 'bg-gray-50 border-gray-200'
-      : penguinDetected
-        ? 'bg-red-50 border-red-300 shadow-lg shadow-red-100 animate-pulse'
-        : 'bg-white border-gray-200 hover:shadow-lg'
-  }`
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        display: false,
+      },
+      y: {
+        display: true,
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)',
+        },
+        ticks: {
+          color: '#9ca3af',
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    elements: {
+      line: {
+        tension: 0.4,
+      },
+      point: {
+        radius: 0,
+      },
+    },
+  };
+
+  const frequencyChartData = {
+    labels: timeLabels,
+    datasets: [
+      {
+        data: frequencyHistory,
+        borderColor: 'hsl(var(--primary))',
+        backgroundColor: 'hsl(var(--primary) / 0.1)',
+        fill: true,
+      },
+    ],
+  };
+
+  const amplitudeChartData = {
+    labels: timeLabels,
+    datasets: [
+      {
+        data: amplitudeHistory,
+        borderColor: 'hsl(var(--secondary))',
+        backgroundColor: 'hsl(var(--secondary) / 0.1)',
+        fill: true,
+      },
+    ],
+  };
 
   if (!isConnected) {
     return (
-      <div className={cardClasses}>
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center">
-            <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+      <Card className="border-dashed">
+        <CardHeader className="space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            Microphone {microphoneId.slice(-1)}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <Badge variant="outline" className="text-muted-foreground">
+              Offline
+            </Badge>
+            <p className="text-xs text-muted-foreground">
+              Last seen: {new Date(data.lastUpdate).toLocaleTimeString()}
+            </p>
           </div>
-          <h3 className="text-lg font-medium text-gray-900">Microphone {microphoneId.slice(-1)}</h3>
-          <p className="text-sm text-gray-500">Not connected</p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className={cardClasses}>
-      <div className="space-y-4">
+    <Card className={cn(
+      penguinDetected && "border-destructive animate-pulse"
+    )}>
+      <CardHeader className="space-y-0 pb-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">
+          <CardTitle className="text-sm font-medium">
             Microphone {microphoneId.slice(-1)}
-          </h3>
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${penguinDetected ? 'bg-red-500' : 'bg-green-500'}`}></div>
-            <span className={`text-sm font-medium ${penguinDetected ? 'text-red-600' : 'text-green-600'}`}>
-              {penguinDetected ? 'Penguin Detected!' : 'No Penguins'}
-            </span>
-          </div>
+          </CardTitle>
+          <Badge variant={penguinDetected ? "destructive" : "secondary"}>
+            {penguinDetected ? 'Penguin Detected!' : 'No Penguins'}
+          </Badge>
         </div>
-
+      </CardHeader>
+      <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <p className="text-sm text-gray-500">Amplitude</p>
-            <motion.p
-              className="text-2xl font-bold text-blue-600"
-              animate={{ scale: penguinDetected ? [1, 1.05, 1] : 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              {amplitudeData?.value.toLocaleString() ?? '0'}
-            </motion.p>
+          <div>
+            <p className="text-sm font-medium mb-1">Frequency</p>
+            <div className="h-[100px] mb-2">
+              <Line data={frequencyChartData} options={chartOptions} />
+            </div>
+            <p className="text-xl font-bold">
+              {data.fftData?.frequency.toFixed(1) ?? '0'}
+              <span className="text-sm ml-1 text-muted-foreground">Hz</span>
+            </p>
           </div>
 
-          <div className="space-y-1">
-            <p className="text-sm text-gray-500">Frequency</p>
-            <motion.p
-              className="text-2xl font-bold text-green-600"
-              animate={{ scale: penguinDetected ? [1, 1.05, 1] : 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              {fftData?.frequency.toFixed(1) ?? '0'}
-              <span className="text-sm ml-1">Hz</span>
-            </motion.p>
+          <div>
+            <p className="text-sm font-medium mb-1">Amplitude</p>
+            <div className="h-[100px] mb-2">
+              <Line data={amplitudeChartData} options={chartOptions} />
+            </div>
+            <p className="text-xl font-bold">
+              {data.amplitudeData?.value.toLocaleString() ?? '0'}
+            </p>
           </div>
         </div>
 
-        <div className="text-xs text-gray-500 space-y-1">
-          <p>Status: Connected</p>
-          <p>Last Update: {new Date().toLocaleTimeString()}</p>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <p>Status: Online</p>
+          <p>Last Update: {new Date(data.lastUpdate).toLocaleTimeString()}</p>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 } 

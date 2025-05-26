@@ -164,15 +164,15 @@ export default function SettingsPage() {
                 key={mic.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`bg-white rounded-xl shadow-sm p-6 border ${
-                  currentData.connected ? 'border-green-100' : 'border-gray-100'
+                className={`rounded-xl shadow-sm p-6 border ${
+                  currentData.connected ? 'border-secondary bg-secondary/10' : 'border-muted bg-background'
                 }`}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">{mic.name}</h2>
+                  <h2 className="text-xl font-semibold text-foreground">{mic.name}</h2>
                   <div className="flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${currentData.connected ? 'bg-green-500' : 'bg-gray-300'}`} />
-                    <span className={`text-sm ${currentData.connected ? 'text-green-600' : 'text-gray-500'}`}>
+                    <div className={`w-2 h-2 rounded-full ${currentData.connected ? 'bg-secondary' : 'bg-muted'}`} />
+                    <span className={`text-sm ${currentData.connected ? 'text-secondary' : 'text-muted-foreground'}`}>
                       {currentData.connected ? 'Connected' : 'Offline'}
                     </span>
                   </div>

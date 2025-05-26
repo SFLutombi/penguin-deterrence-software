@@ -1,33 +1,30 @@
-const { io } = require('socket.io-client');
+const WebSocket = require('ws');
 
 class ESP32Simulator {
-  constructor(url = 'http://localhost:3001') {
+  constructor(url = 'ws://localhost:3001') {
     this.url = url;
-    this.socket = null;
+    this.ws = null;
     this.isConnected = false;
     this.interval = null;
   }
 
   connect() {
     return new Promise((resolve, reject) => {
-      this.socket = io(this.url, {
-        path: '/api/esp32',
-        transports: ['websocket']
-      });
+      this.ws = new WebSocket(this.url);
 
-      this.socket.on('connect', () => {
-        console.log('Connected to Socket.IO server');
+      this.ws.on('open', () => {
+        console.log('Connected to WebSocket server');
         this.isConnected = true;
         resolve();
       });
 
-      this.socket.on('connect_error', (error) => {
-        console.error('Socket.IO connection error:', error);
+      this.ws.on('error', (error) => {
+        console.error('WebSocket error:', error);
         reject(error);
       });
 
-      this.socket.on('disconnect', () => {
-        console.log('Disconnected from Socket.IO server');
+      this.ws.on('close', () => {
+        console.log('Disconnected from WebSocket server');
         this.isConnected = false;
         if (this.interval) {
           clearInterval(this.interval);
@@ -38,8 +35,8 @@ class ESP32Simulator {
   }
 
   startSimulation(intervalMs = 100) {
-    if (!this.isConnected || !this.socket) {
-      throw new Error('Not connected to Socket.IO server');
+    if (!this.isConnected || !this.ws) {
+      throw new Error('Not connected to WebSocket server');
     }
 
     this.interval = setInterval(() => {
@@ -50,19 +47,22 @@ class ESP32Simulator {
       
       // Send FFT data
       const fftData = {
+        type: 'fft',
         frequency,
-        magnitude
+        magnitude,
+        micId: 'm1'
       };
       
       // Send amplitude data
       const amplitudeData = {
         type: 'amplitude',
-        value: magnitude * 10 // Simulated amplitude based on magnitude
+        value: magnitude * 10, // Simulated amplitude based on magnitude
+        micId: 'm1'
       };
 
-      if (this.socket?.connected) {
-        this.socket.emit('fftData', fftData);
-        this.socket.emit('amplitudeData', amplitudeData);
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify(fftData));
+        this.ws.send(JSON.stringify(amplitudeData));
       }
     }, intervalMs);
   }
@@ -76,9 +76,9 @@ class ESP32Simulator {
 
   disconnect() {
     this.stopSimulation();
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
     }
   }
 }
@@ -91,14 +91,16 @@ async function runTest() {
     console.log('Starting simulation...');
     simulator.startSimulation();
     
-    // Run for 10 seconds then stop
+    // Run for 60 seconds then stop
     setTimeout(() => {
       simulator.stopSimulation();
       simulator.disconnect();
       console.log('Test completed');
-    }, 10000);
+      process.exit(0);
+    }, 60000);
   } catch (error) {
     console.error('Test failed:', error);
+    process.exit(1);
   }
 }
 

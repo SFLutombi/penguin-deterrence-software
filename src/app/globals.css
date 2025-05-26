@@ -4,11 +4,73 @@
 
 @layer base {
   :root {
-    --font-geist-sans: 'Geist', system-ui, sans-serif;
-    --font-geist-mono: 'Geist Mono', monospace;
-  }
+    /* Core Background Colors */
+    --background: 180 40% 15%;        /* Deep teal background */
+    --foreground: 159 90% 92%;        /* Light mint text */
+    
+    /* Card and Container Colors */
+    --card: 180 35% 20%;              /* Slightly lighter teal for cards */
+    --card-foreground: 159 90% 92%;   /* Light text on cards */
+    
+    /* Accent Colors */
+    --primary: 160 100% 45%;          /* Bright teal for actions */
+    --primary-foreground: 0 0% 100%;  /* White text on primary */
+    --secondary: 24 95% 59%;          /* Orange for warnings/alerts */
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Status Colors */
+    --success: 160 100% 39%;          /* Green success indicators */
+    --warning: 35 100% 64%;           /* Orange warnings */
+    --error: 3 100% 67%;              /* Red errors */
+    --info: 180 40% 50%;              /* Info color */
+    
+    /* UI Element Colors */
+    --muted: 180 30% 25%;             /* Subtle background */
+    --muted-foreground: 159 90% 82%;  /* Muted text */
+    --accent: 180 35% 25%;            /* Subtle highlights */
+    --accent-foreground: 159 90% 92%;
+    
+    /* Border and Input Colors */
+    --border: 180 30% 30%;            /* Subtle borders */
+    --input: 180 30% 30%;
+    --ring: 160 100% 45%;             /* Focus ring color */
+    
+    /* Popover Colors */
+    --popover: 180 35% 20%;
+    --popover-foreground: 159 90% 92%;
+    
+    /* Destructive Actions */
+    --destructive: 3 100% 67%;
+    --destructive-foreground: 0 0% 100%;
 
+    /* Sidebar Specific */
+    --sidebar-background: 180 45% 12%;     /* Darkest teal */
+    --sidebar-foreground: 159 90% 92%;
+    --sidebar-primary: 160 100% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 180 35% 25%;
+    --sidebar-accent-foreground: 159 90% 92%;
+    --sidebar-border: 180 30% 30%;
+    --sidebar-ring: 160 100% 45%;
+
+    /* Chart Colors */
+    --chart-1: 160 100% 45%;          /* Primary chart color */
+    --chart-2: 24 95% 59%;            /* Secondary chart color */
+    --chart-3: 35 100% 64%;           /* Tertiary chart color */
+    --chart-4: 180 40% 50%;           /* Quaternary chart color */
+    --chart-5: 3 100% 67%;            /* Quinary chart color */
+
+    /* Border Radius */
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
   body {
-    @apply bg-gray-50 font-sans;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 } 

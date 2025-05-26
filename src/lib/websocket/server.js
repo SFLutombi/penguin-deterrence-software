@@ -1,151 +1,84 @@
-const { Server } = require('socket.io');
-const fetch = require('node-fetch');
+const express = require('express');
+const http = require('http');
+const WebSocket = require('ws');
+const cors = require('cors');
+const { addDetection } = require('../db');
 
-// Threshold configuration
-const THRESHOLDS = {
-  frequency: {
-    min: 1000,    // Hz - typical penguin vocalizations
-    max: 5000     // Hz
-  },
-  magnitude: 500,  // Threshold for significant sound detection
-  amplitude: 5000  // Threshold for overall amplitude
-};
+const app = express();
+const server = http.createServer(app);
+const port = 3001;
 
-let io = null;
+// Enable CORS for the HTTP server
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST"]
+}));
 
-// Function to check if the data indicates penguin activity
-function isPenguinActivity(data) {
-  if (data.frequency) {
-    const isInRange = data.frequency >= THRESHOLDS.frequency.min && 
-                     data.frequency <= THRESHOLDS.frequency.max;
-    const isMagnitudeHigh = data.magnitude > THRESHOLDS.magnitude;
-    
-    console.log(`Checking FFT data:
-      Frequency: ${data.frequency} Hz (${isInRange ? 'IN' : 'OUT OF'} RANGE)
-      Magnitude: ${data.magnitude} (${isMagnitudeHigh ? 'ABOVE' : 'BELOW'} THRESHOLD)
-    `);
-    
-    return isInRange && isMagnitudeHigh;
-  }
-  if (data.type === 'amplitude') {
-    const isHighAmplitude = data.value > THRESHOLDS.amplitude;
-    console.log(`Checking amplitude data:
-      Value: ${data.value} (${isHighAmplitude ? 'ABOVE' : 'BELOW'} THRESHOLD)
-    `);
-    return isHighAmplitude;
-  }
-  return false;
-}
+// Create WebSocket server
+const wss = new WebSocket.Server({ server });
 
-// Function to log detection to the API
-async function logDetection(data, wasTriggered = false) {
-  try {
-    const response = await fetch('http://localhost:3001/api/log', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        espId: 'ESP32-1',
-        magnitude: data.magnitude || data.value,
-        frequency: data.frequency || 0,
-        timestamp: new Date().toISOString(),
-        triggered: wasTriggered
-      })
-    });
-
-    if (!response.ok) {
-      console.error('Failed to log detection:', await response.text());
-    } else {
-      console.log(`Successfully logged ${wasTriggered ? 'ALERT' : 'debug'} detection to API`);
+// Function to log detection to database
+async function logDetection(data) {
+    try {
+        const detection = {
+            microphoneId: data.micId || 'unknown',
+            frequency: data.type === 'fft' ? data.frequency : null,
+            magnitude: data.type === 'fft' ? data.magnitude : data.value,
+            type: data.type === 'fft' ? 'frequency' : 'amplitude'
+        };
+        
+        console.log('Adding detection to database:', detection);
+        
+        // Add to database
+        const id = await addDetection(detection);
+        console.log(`Successfully logged detection with ID: ${id}`);
+    } catch (error) {
+        console.error('Error logging detection:', error.message);
+        console.error('Stack:', error.stack);
     }
-  } catch (error) {
-    console.error('Error logging detection:', error);
-  }
 }
 
-// Function to trigger deterrent
-async function triggerDeterrent() {
-  try {
-    const response = await fetch('http://localhost:3001/api/deter', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ mode: 'both' })
-    });
+// WebSocket connection handling
+wss.on('connection', (ws, req) => {
+    console.log('Client connected from:', req.socket.remoteAddress);
 
-    if (!response.ok) {
-      console.error('Failed to trigger deterrent:', await response.text());
-    } else {
-      console.log('Successfully triggered deterrent');
-    }
-  } catch (error) {
-    console.error('Error triggering deterrent:', error);
-  }
-}
+    // Handle incoming messages
+    ws.on('message', async (message) => {
+        try {
+            const data = JSON.parse(message);
+            console.log('Received:', data);
 
-const initializeSocket = (server) => {
-  if (!io) {
-    io = new Server(server, {
-      path: '/api/esp32',
-      addTrailingSlash: false,
-      cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
-      }
-    });
+            // Log the detection to the database
+            await logDetection(data);
 
-    io.on('connection', (socket) => {
-      console.log('Client connected:', socket.id);
-
-      socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
-      });
-
-      // Handle FFT data
-      socket.on('fftData', async (data) => {
-        console.log('\n--- Processing FFT Data ---');
-        
-        // Log all detections for debugging
-        await logDetection(data, false);
-        
-        // Check for penguin activity
-        if (isPenguinActivity(data)) {
-          console.log('⚠️ Potential penguin activity detected!');
-          await logDetection(data, true);
-          await triggerDeterrent();
+            // Broadcast to all connected clients
+            wss.clients.forEach((client) => {
+                if (client !== ws && client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify(data));
+                }
+            });
+        } catch (e) {
+            console.error('Error processing message:', e);
+            console.log('Raw message:', message.toString());
         }
-
-        // Broadcast to all connected clients
-        io?.emit('fftData', data);
-      });
-
-      // Handle amplitude data
-      socket.on('amplitudeData', async (data) => {
-        console.log('\n--- Processing Amplitude Data ---');
-        
-        // Log all detections for debugging
-        await logDetection(data, false);
-        
-        // Check for penguin activity based on amplitude
-        if (isPenguinActivity(data)) {
-          console.log('⚠️ High amplitude detected!');
-          await logDetection(data, true);
-          await triggerDeterrent();
-        }
-
-        // Broadcast to all connected clients
-        io?.emit('amplitudeData', data);
-      });
     });
-  }
-  return io;
-};
 
-const getSocketIO = () => io;
+    // Handle client disconnection
+    ws.on('close', () => {
+        console.log('Client disconnected');
+    });
 
-module.exports = {
-  initializeSocket,
-  getSocketIO
-}; 
+    // Handle errors
+    ws.on('error', (error) => {
+        console.error('WebSocket error:', error);
+    });
+
+    // Send welcome message
+    ws.send(JSON.stringify({ type: 'welcome', message: 'Connected to WebSocket server' }));
+});
+
+// Start server
+server.listen(port, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${port}`);
+    console.log('WebSocket server is ready for connections');
+}); 

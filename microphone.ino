@@ -77,6 +77,9 @@ const char* wsHost = "192.168.105.40";    // Your computer's IP address
 const int wsPort = 3001;
 const char* wsPath = "/";                  // Changed to root path for plain WebSocket
 
+// Microphone identifier - change this for each ESP32
+const char* micId = "m1";  // Change to "m2" or "m3" for other microphones
+
 // Connection management
 unsigned long lastReconnectAttempt = 0;
 const unsigned long reconnectInterval = 2000; // Try to reconnect every 2 seconds
@@ -141,8 +144,8 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
             Serial.println("WebSocket connected successfully!");
             isConnecting = false;
             reconnectCount = 0;
-            // Send initial handshake
-            webSocket.sendTXT("{\"type\":\"hello\",\"device\":\"esp32\"}");
+            // Send initial handshake with mic ID
+            webSocket.sendTXT("{\"type\":\"hello\",\"device\":\"esp32\",\"micId\":\"" + String(micId) + "\"}");
             break;
             
         case WStype_TEXT:
@@ -214,12 +217,12 @@ void sendData(const char* type, float value1, float value2 = 0) {
     
     if (value2 == 0) {
         snprintf(msgBuffer, sizeof(msgBuffer), 
-                "{\"type\":\"amplitude\",\"value\":%.2f}", 
-                value1);
+                "{\"type\":\"%s\",\"value\":%.2f,\"micId\":\"%s\"}", 
+                type, value1, micId);
     } else {
         snprintf(msgBuffer, sizeof(msgBuffer), 
-                "{\"type\":\"fft\",\"frequency\":%.2f,\"magnitude\":%.2f}", 
-                value1, value2);
+                "{\"type\":\"fft\",\"frequency\":%.2f,\"magnitude\":%.2f,\"micId\":\"%s\"}", 
+                value1, value2, micId);
     }
     
     webSocket.sendTXT(msgBuffer);

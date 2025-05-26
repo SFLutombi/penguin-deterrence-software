@@ -1,3 +1,5 @@
+'use client'
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useState } from "react"
@@ -54,8 +56,7 @@ export function DeterrentControls() {
             Activate Sound
           </Button>
           <Button
-            variant="default"
-            className="bg-red-500 hover:bg-red-600"
+            variant="secondary"
             disabled={isActivating}
             onClick={() => activateDeterrent('both')}
           >
