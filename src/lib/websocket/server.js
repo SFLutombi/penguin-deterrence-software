@@ -40,7 +40,7 @@ function isPenguinActivity(data) {
 // Function to log detection to the API
 async function logDetection(data, wasTriggered = false) {
   try {
-    const response = await fetch('http://localhost:3000/api/log', {
+    const response = await fetch('http://localhost:3001/api/log', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ async function logDetection(data, wasTriggered = false) {
 // Function to trigger deterrent
 async function triggerDeterrent() {
   try {
-    const response = await fetch('http://localhost:3000/api/deter', {
+    const response = await fetch('http://localhost:3001/api/deter', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

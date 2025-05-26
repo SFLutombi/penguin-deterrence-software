@@ -9,6 +9,7 @@ export default authMiddleware({
     "/api/esp32",
     "/api/serial",
     "/api/log",
+    "/api/deter",
     "/test",
     "/sign-in",
     "/sign-up",

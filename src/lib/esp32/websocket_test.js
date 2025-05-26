@@ -1,7 +1,7 @@
 const { io } = require('socket.io-client');
 
 class ESP32Simulator {
-  constructor(url = 'http://localhost:3000') {
+  constructor(url = 'http://localhost:3001') {
     this.url = url;
     this.socket = null;
     this.isConnected = false;
