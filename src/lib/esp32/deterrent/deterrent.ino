@@ -133,23 +133,28 @@ void loop() {
         turnOffAll();
         reset = 0;
     } else {
-        if (strobe == 1 && siren == 1) {
-            turnOnAll();
+        // Handle individual controls
+        if (strobe == 1) {
+            digitalWrite(pinStrobe, HIGH);
+        }
+        if (strobeOff == 1) {
+            digitalWrite(pinStrobe, LOW);
+            strobeOff = 0;
+        }
+        
+        if (siren == 1) {
+            digitalWrite(pinSiren, HIGH);
+        }
+        if (sirenOff == 1) {
+            digitalWrite(pinSiren, LOW);
+            sirenOff = 0;
+        }
+        
+        // Update LED status
+        if (strobe == 1 || siren == 1) {
+            digitalWrite(LED_PIN, HIGH);
         } else {
-            if (strobe == 1) {
-                turnOnStrobe();
-            }
-            if (siren == 1) {
-                turnOnSiren();
-            }
-            if (strobeOff == 1) {
-                turnOffStrobe();
-                strobeOff = 0;
-            }
-            if (sirenOff == 1) {
-                turnOffSiren();
-                sirenOff = 0;
-            }
+            digitalWrite(LED_PIN, LOW);
         }
     }
 
@@ -159,21 +164,26 @@ void loop() {
 // Control Functions
 void turnOnStrobe() {
     digitalWrite(pinStrobe, HIGH);
-    flashLED(1000);
+    digitalWrite(LED_PIN, HIGH);
 }
 
 void turnOffStrobe() {
     digitalWrite(pinStrobe, LOW);
-    digitalWrite(LED_PIN, LOW);
+    if (siren == 0) {
+        digitalWrite(LED_PIN, LOW);
+    }
 }
 
 void turnOnSiren() {
     digitalWrite(pinSiren, HIGH);
+    digitalWrite(LED_PIN, HIGH);
 }
 
 void turnOffSiren() {
     digitalWrite(pinSiren, LOW);
-    digitalWrite(LED_PIN, LOW);
+    if (strobe == 0) {
+        digitalWrite(LED_PIN, LOW);
+    }
 }
 
 void turnOnAll() {
@@ -186,6 +196,10 @@ void turnOffAll() {
     digitalWrite(pinStrobe, LOW);
     digitalWrite(pinSiren, LOW);
     digitalWrite(LED_PIN, LOW);
+    strobe = 0;
+    siren = 0;
+    strobeOff = 0;
+    sirenOff = 0;
     reset = 0;
 }
 

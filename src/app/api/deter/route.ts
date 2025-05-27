@@ -26,18 +26,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid mode' }, { status: 400 })
     }
 
-    // Create a temporary WebSocket connection to send the command
+    // Create a WebSocket connection to send the command
     const ws = new WebSocket(`ws://${DETERRENT_WS_HOST}:${DETERRENT_WS_PORT}`)
     
     await new Promise((resolve, reject) => {
       ws.on('open', () => {
+        // Send the activation command
         ws.send(JSON.stringify({ command }))
-        // Auto-off after 30 seconds
+        
+        // Send the off command after 30 seconds
         setTimeout(() => {
           const offCommand = command.replace('_on', '_off')
           ws.send(JSON.stringify({ command: offCommand }))
-          ws.close()
+          // Close the connection after sending the off command
+          setTimeout(() => ws.close(), 1000)
         }, 30000)
+        
         resolve(true)
       })
       

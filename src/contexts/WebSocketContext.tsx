@@ -68,18 +68,18 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         if (!data.micId) return; // Ignore messages without micId
 
         if (data.type === 'fft') {
-          setMicrophoneData(prev => ({
-            ...prev,
-            [data.micId]: {
-              ...prev[data.micId as keyof typeof prev],
+        setMicrophoneData(prev => ({
+          ...prev,
+          [data.micId]: {
+            ...prev[data.micId as keyof typeof prev],
               fftData: {
                 frequency: data.frequency,
                 magnitude: data.magnitude,
                 amplitude: data.amplitude
               },
-              lastUpdate: Date.now(),
-            }
-          }));
+            lastUpdate: Date.now(),
+          }
+        }));
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -89,14 +89,14 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     newWs.onerror = (error) => {
       console.error('WebSocket error:', error);
       if (wsRef.current === newWs) {
-        setIsConnected(false);
+      setIsConnected(false);
       }
     };
 
     newWs.onclose = () => {
       console.log('Disconnected from WebSocket server');
       if (wsRef.current === newWs) {
-        setIsConnected(false);
+      setIsConnected(false);
         // Schedule reconnection only if this is still the current connection
         reconnectTimeoutRef.current = setTimeout(() => {
           if (wsRef.current === newWs) {

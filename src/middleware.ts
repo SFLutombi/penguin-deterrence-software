@@ -15,6 +15,12 @@ export default authMiddleware({
     "/sign-up",
     "/api/webhook/clerk",
     "/api/webhook/stripe",
+    "/api/detections",
+    "/api/detections/stats",
+    "/api/detections/export",
+    "/api/microphones",
+    "/detections",
+    "/settings"
   ],
   ignoredRoutes: [
     "/((?!api|trpc))(_next.*|.+\\.[\\w]+$)",
