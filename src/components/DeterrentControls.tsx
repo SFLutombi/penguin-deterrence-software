@@ -4,11 +4,28 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useState } from "react"
 import { toast } from "sonner"
+import { useWebSocket } from "@/contexts/WebSocketContext"
+import { cn } from "@/lib/utils"
+import { motion, AnimatePresence } from "framer-motion"
+import { AlertTriangle } from "lucide-react"
 
 type DeterrentMode = 'lights' | 'sound' | 'both'
 
 export function DeterrentControls() {
   const [isActivating, setIsActivating] = useState(false)
+  const { microphoneData } = useWebSocket()
+
+  // Check if any microphone has detected a penguin
+  const isPenguinDetected = Object.values(microphoneData).some(
+    (data) => {
+      if (!data.fftData) return false;
+      // Check if the frequency is in the penguin vocalization range (typically 800-3000 Hz)
+      // and the magnitude is significant enough
+      return data.fftData.frequency >= 800 && 
+             data.fftData.frequency <= 3000 && 
+             data.fftData.magnitude > 50;
+    }
+  )
 
   const activateDeterrent = async (mode: DeterrentMode) => {
     try {
@@ -35,30 +52,58 @@ export function DeterrentControls() {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className={cn(
+      "transition-all duration-500",
+      isPenguinDetected && "shadow-[0_0_30px_rgba(220,38,38,0.3)] border-red-500"
+    )}>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Deterrent Controls</CardTitle>
+        <AnimatePresence>
+          {isPenguinDetected && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="flex items-center gap-2 text-red-500"
+            >
+              <AlertTriangle className="h-5 w-5 animate-pulse" />
+              <span className="text-sm font-medium">Penguin Detected!</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Button
-            variant="outline"
+            variant={isPenguinDetected ? "destructive" : "outline"}
             disabled={isActivating}
             onClick={() => activateDeterrent('lights')}
+            className={cn(
+              "transition-all duration-300",
+              isPenguinDetected && "animate-pulse shadow-lg"
+            )}
           >
             Activate Lights
           </Button>
           <Button
-            variant="outline"
+            variant={isPenguinDetected ? "destructive" : "outline"}
             disabled={isActivating}
             onClick={() => activateDeterrent('sound')}
+            className={cn(
+              "transition-all duration-300",
+              isPenguinDetected && "animate-pulse shadow-lg"
+            )}
           >
             Activate Sound
           </Button>
           <Button
-            variant="secondary"
+            variant={isPenguinDetected ? "destructive" : "secondary"}
             disabled={isActivating}
             onClick={() => activateDeterrent('both')}
+            className={cn(
+              "transition-all duration-300",
+              isPenguinDetected && "animate-pulse shadow-lg"
+            )}
           >
             Activate Both
           </Button>

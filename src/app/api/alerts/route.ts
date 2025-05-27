@@ -13,12 +13,10 @@ export async function GET(request: Request) {
 
     // Format detections for the alerts display
     const alerts: Alert[] = detections.map(detection => ({
-      type: detection.type,
-      message: detection.type === 'frequency'
-        ? `Penguin detected with frequency ${detection.frequency.toFixed(1)} Hz`
-        : `High amplitude detected: ${detection.magnitude.toLocaleString()}`,
-      value: detection.type === 'frequency' ? detection.frequency : detection.magnitude,
-      threshold: detection.type === 'frequency' ? 400 : 300000, // Default thresholds
+      type: 'penguin',
+      message: `Penguin detected with frequency ${detection.frequency.toFixed(1)} Hz and amplitude ${detection.magnitude.toLocaleString()}`,
+      frequency: detection.frequency,
+      magnitude: detection.magnitude,
       timestamp: new Date(detection.timestamp).getTime(),
       microphoneId: detection.microphoneId
     }))

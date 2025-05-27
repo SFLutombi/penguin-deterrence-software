@@ -1,10 +1,9 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 
 interface MicrophoneData {
-  fftData: { frequency: number; magnitude: number } | null;
-  amplitudeData: { value: number } | null;
+  fftData: { frequency: number; magnitude: number; amplitude: number } | null;
   lastUpdate: number;
 }
 
@@ -19,7 +18,6 @@ interface WebSocketContextType {
 
 const defaultMicData: MicrophoneData = {
   fftData: null,
-  amplitudeData: null,
   lastUpdate: 0,
 };
 
@@ -39,11 +37,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     m3: defaultMicData,
   });
   const [isConnected, setIsConnected] = useState(false);
-  const [ws, setWs] = useState<WebSocket | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const connect = useCallback(() => {
-    if (ws) {
-      ws.close();
+    // Clear any existing reconnection timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    // Close existing connection if any
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
     }
 
     const newWs = new WebSocket('ws://localhost:3001');
@@ -60,19 +67,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
         if (!data.micId) return; // Ignore messages without micId
 
-        setMicrophoneData(prev => ({
-          ...prev,
-          [data.micId]: {
-            ...prev[data.micId as keyof typeof prev],
-            ...(data.type === 'fft' ? {
-              fftData: { frequency: data.frequency, magnitude: data.magnitude }
-            } : {}),
-            ...(data.type === 'amplitude' ? {
-              amplitudeData: { value: data.value }
-            } : {}),
-            lastUpdate: Date.now(),
-          }
-        }));
+        if (data.type === 'fft') {
+          setMicrophoneData(prev => ({
+            ...prev,
+            [data.micId]: {
+              ...prev[data.micId as keyof typeof prev],
+              fftData: {
+                frequency: data.frequency,
+                magnitude: data.magnitude,
+                amplitude: data.amplitude
+              },
+              lastUpdate: Date.now(),
+            }
+          }));
+        }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
@@ -80,25 +88,37 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     newWs.onerror = (error) => {
       console.error('WebSocket error:', error);
-      setIsConnected(false);
+      if (wsRef.current === newWs) {
+        setIsConnected(false);
+      }
     };
 
     newWs.onclose = () => {
       console.log('Disconnected from WebSocket server');
-      setIsConnected(false);
-      // Attempt to reconnect after 2 seconds
-      setTimeout(() => connect(), 2000);
+      if (wsRef.current === newWs) {
+        setIsConnected(false);
+        // Schedule reconnection only if this is still the current connection
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (wsRef.current === newWs) {
+            connect();
+          }
+        }, 2000);
+      }
     };
 
-    setWs(newWs);
+    wsRef.current = newWs;
   }, []);
 
   useEffect(() => {
     connect();
 
     return () => {
-      if (ws) {
-        ws.close();
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
       }
     };
   }, [connect]);

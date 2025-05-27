@@ -57,7 +57,7 @@ export function MicrophoneData({ microphoneId }: MicrophoneDataProps) {
 
   // Update historical data
   useEffect(() => {
-    if (data.fftData && data.amplitudeData) {
+    if (data.fftData) {
       const now = new Date().toLocaleTimeString();
       
       setFrequencyHistory(prev => {
@@ -66,7 +66,7 @@ export function MicrophoneData({ microphoneId }: MicrophoneDataProps) {
       });
       
       setAmplitudeHistory(prev => {
-        const newData = [...prev, data.amplitudeData!.value];
+        const newData = [...prev, data.fftData!.amplitude];
         return newData.slice(-MAX_DATA_POINTS);
       });
       
@@ -75,7 +75,7 @@ export function MicrophoneData({ microphoneId }: MicrophoneDataProps) {
         return newLabels.slice(-MAX_DATA_POINTS);
       });
     }
-  }, [data.fftData, data.amplitudeData]);
+  }, [data.fftData]);
 
   // Update penguin detection
   useEffect(() => {
@@ -87,6 +87,9 @@ export function MicrophoneData({ microphoneId }: MicrophoneDataProps) {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: 250
+    } as const,
     scales: {
       x: {
         display: false,
@@ -195,7 +198,7 @@ export function MicrophoneData({ microphoneId }: MicrophoneDataProps) {
               <Line data={amplitudeChartData} options={chartOptions} />
             </div>
             <p className="text-xl font-bold">
-              {data.amplitudeData?.value.toLocaleString() ?? '0'}
+              {data.fftData?.amplitude.toLocaleString() ?? '0'}
             </p>
           </div>
         </div>

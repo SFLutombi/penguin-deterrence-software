@@ -73,7 +73,7 @@ const char* ssid = "ANJ Properties";     // Replace with your WiFi network name
 const char* password = "";  // Replace with your WiFi password
 
 // WebSocket Settings
-const char* wsHost = "192.168.105.40";    // Your computer's IP address
+const char* wsHost = "192.168.0.125";    // Your computer's IP address
 const int wsPort = 3001;
 const char* wsPath = "/";                  // Changed to root path for plain WebSocket
 
@@ -265,18 +265,20 @@ void fftResult(AudioFFTBase &fft_obj)
         // Determine if it's a penguin
         penguinDetected = (matches >= REQUIRED_MATCHES_FOR_PENGUIN);
 
-        // Send average data using optimized function
-        sendData("fft", avgFrequency, avgMagnitude);
-        if (absVal > 0) {
-            sendData("amplitude", absVal);
-            absVal = 0;  // Reset after sending
-        }
+        // Send combined data with both frequency and amplitude
+        snprintf(msgBuffer, sizeof(msgBuffer), 
+                "{\"type\":\"fft\",\"frequency\":%.2f,\"magnitude\":%.2f,\"amplitude\":%.2f,\"micId\":\"%s\",\"penguinDetected\":%s}", 
+                avgFrequency, avgMagnitude, absVal, micId, penguinDetected ? "true" : "false");
+        webSocket.sendTXT(msgBuffer);
+        absVal = 0;  // Reset after sending
 
         // Debug output
         Serial.print("Avg Freq: ");
         Serial.print(avgFrequency);
         Serial.print(" Hz | Avg Magnitude: ");
         Serial.print(avgMagnitude);
+        Serial.print(" | Amplitude: ");
+        Serial.print(absVal);
         Serial.print(" | Matches: ");
         Serial.print(matches);
         Serial.print(" -> ");

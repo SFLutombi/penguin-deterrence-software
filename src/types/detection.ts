@@ -8,9 +8,10 @@ export interface Detection {
 }
 
 export interface Alert {
-  type: 'frequency' | 'amplitude'
+  type: 'penguin'
   message: string
-  value: number
+  frequency: number
+  magnitude: number
   timestamp: number
   microphoneId: string
 }

@@ -20,18 +20,28 @@ const wss = new WebSocket.Server({ server });
 // Function to log detection to database
 async function logDetection(data) {
     try {
+        // Only log if a penguin is detected
+        if (!data.penguinDetected) {
+            return; // Skip logging if no penguin detected
+        }
+
+        // Only log FFT data which contains both frequency and magnitude
+        if (data.type !== 'fft') {
+            return; // Skip amplitude-only messages
+        }
+
         const detection = {
             microphoneId: data.micId || 'unknown',
-            frequency: data.type === 'fft' ? data.frequency : null,
-            magnitude: data.type === 'fft' ? data.magnitude : data.value,
-            type: data.type === 'fft' ? 'frequency' : 'amplitude'
+            frequency: data.frequency,
+            magnitude: data.magnitude,
+            type: 'frequency' // Always mark as frequency type since it's a penguin detection
         };
         
-        console.log('Adding detection to database:', detection);
+        console.log('Adding penguin detection to database:', detection);
         
         // Add to database
         const id = await addDetection(detection);
-        console.log(`Successfully logged detection with ID: ${id}`);
+        console.log(`Successfully logged penguin detection with ID: ${id}`);
     } catch (error) {
         console.error('Error logging detection:', error.message);
         console.error('Stack:', error.stack);
