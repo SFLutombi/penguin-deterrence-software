@@ -19,11 +19,11 @@ int reset = 0;
 WebSocketsClient webSocket;
 
 // WiFi credentials
-const char* ssid = "ANJ Properties";     // Replace with your WiFi network name
-const char* password = "";               // Replace with your WiFi password
+const char* ssid = "Cal";     // Replace with your WiFi network name
+const char* password = "qwertyui";               // Replace with your WiFi password
 
 // WebSocket server details
-const char* wsHost = "192.168.0.125";    // Your server IP
+const char* wsHost = "192.168.105.40";    // Your server IP
 const int wsPort = 8080;                 // Port for deterrent control
 const char* wsPath = "/";                // Root path
 

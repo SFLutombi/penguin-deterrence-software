@@ -68,17 +68,16 @@ Additional Libraries:
 #include <WebSocketsClient.h>
 #include <esp_heap_caps.h>
 
-// WiFi Settings
-const char* ssid = "ANJ Properties";     // Replace with your WiFi network name
-const char* password = "";  // Replace with your WiFi password
+const char* ssid = "Cal";     // Replace with your WiFi network name
+const char* password = "qwertyui";               // Replace with your WiFi password
 
-// WebSocket Settings
-const char* wsHost = "192.168.0.125";    // Your computer's IP address
+// WebSocket server details
+const char* wsHost = "192.168.105.40";     // Your computer's IP address
 const int wsPort = 3001;
 const char* wsPath = "/";                  // Changed to root path for plain WebSocket
 
 // Microphone identifier - change this for each ESP32
-const char* micId = "m1";  // Change to "m2" or "m3" for other microphones
+const char* micId = "m2";  // Change to "m2" or "m3" for other microphones
 
 // Connection management
 unsigned long lastReconnectAttempt = 0;
