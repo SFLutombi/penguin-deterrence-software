@@ -6,7 +6,7 @@ const DETERRENT_WS_HOST = 'localhost'
 
 // In-memory queue for pending commands (replace with database in production)
 let pendingCommands: Array<{
-  mode: 'lights' | 'sound' | 'both'
+  mode: 'lights' | 'sound' | 'both' | 'stop'
   timestamp: string
 }> = []
 
@@ -18,7 +18,8 @@ export async function POST(request: Request) {
     const commandMap = {
       'lights': 'lights_on',
       'sound': 'sound_on',
-      'both': 'both_on'
+      'both': 'both_on',
+      'stop': 'stop'
     }
     
     const command = commandMap[mode as keyof typeof commandMap]
@@ -31,18 +32,28 @@ export async function POST(request: Request) {
     
     await new Promise((resolve, reject) => {
       ws.on('open', () => {
-        // Send the activation command
-        ws.send(JSON.stringify({ command }))
-        
-        // Send the off command after 30 seconds
-        setTimeout(() => {
-          const offCommand = command.replace('_on', '_off')
-          ws.send(JSON.stringify({ command: offCommand }))
-          // Close the connection after sending the off command
-          setTimeout(() => ws.close(), 1000)
-        }, 30000)
-        
-        resolve(true)
+        // For stop command, send both lights_off and sound_off
+        if (command === 'stop') {
+          ws.send(JSON.stringify({ command: 'lights_off' }))
+          ws.send(JSON.stringify({ command: 'sound_off' }))
+          setTimeout(() => {
+            ws.close()
+            resolve(true)
+          }, 1000)
+        } else {
+          // Send the activation command
+          ws.send(JSON.stringify({ command }))
+          
+          // Send the off command after 30 seconds
+          setTimeout(() => {
+            const offCommand = command.replace('_on', '_off')
+            ws.send(JSON.stringify({ command: offCommand }))
+            // Close the connection after sending the off command
+            setTimeout(() => ws.close(), 1000)
+          }, 30000)
+          
+          resolve(true)
+        }
       })
       
       ws.on('error', (error) => {

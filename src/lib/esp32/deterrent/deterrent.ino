@@ -4,7 +4,7 @@
 #include <ArduinoJson.h>
 
 // Pin definitions
-#define LED_PIN 2         // Onboard LED
+#define LED_PIN 2         // Onboard LED (built-in LED for status)
 const int pinStrobe = 15; // Strobe light pin
 const int pinSiren = 2;   // Siren pin
 
@@ -63,30 +63,30 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
             const char* command = doc["command"];
             if (command) {
                 if (strcmp(command, "lights_on") == 0) {
+                    digitalWrite(pinStrobe, HIGH);  // Only control the strobe light
                     strobe = 1;
-                    strobeOff = 0;
                 }
                 else if (strcmp(command, "sound_on") == 0) {
+                    digitalWrite(pinSiren, HIGH);   // Only control the siren
                     siren = 1;
-                    sirenOff = 0;
                 }
                 else if (strcmp(command, "both_on") == 0) {
+                    digitalWrite(pinStrobe, HIGH);
+                    digitalWrite(pinSiren, HIGH);
                     strobe = 1;
                     siren = 1;
-                    strobeOff = 0;
-                    sirenOff = 0;
                 }
                 else if (strcmp(command, "lights_off") == 0) {
-                    strobeOff = 1;
+                    digitalWrite(pinStrobe, LOW);   // Only control the strobe light
                     strobe = 0;
                 }
                 else if (strcmp(command, "sound_off") == 0) {
-                    sirenOff = 1;
+                    digitalWrite(pinSiren, LOW);    // Only control the siren
                     siren = 0;
                 }
-                else if (strcmp(command, "both_off") == 0) {
-                    strobeOff = 1;
-                    sirenOff = 1;
+                else if (strcmp(command, "both_off") == 0 || strcmp(command, "stop") == 0) {
+                    digitalWrite(pinStrobe, LOW);
+                    digitalWrite(pinSiren, LOW);
                     strobe = 0;
                     siren = 0;
                 }
@@ -102,10 +102,14 @@ void setup() {
     Serial.begin(115200);
     
     // Initialize pins
-    pinMode(LED_PIN, OUTPUT);
-    pinMode(pinStrobe, OUTPUT);
-    pinMode(pinSiren, OUTPUT);
-    turnOffAll();
+    pinMode(LED_PIN, OUTPUT);    // Built-in LED for status
+    pinMode(pinStrobe, OUTPUT);  // External strobe light
+    pinMode(pinSiren, OUTPUT);   // External siren
+    
+    // Initialize all outputs to LOW
+    digitalWrite(LED_PIN, LOW);
+    digitalWrite(pinStrobe, LOW);
+    digitalWrite(pinSiren, LOW);
     
     // Connect to WiFi
     Serial.print("Connecting to WiFi");
@@ -130,35 +134,16 @@ void loop() {
     webSocket.loop();
 
     if (reset == 1) {
-        turnOffAll();
+        digitalWrite(pinStrobe, LOW);
+        digitalWrite(pinSiren, LOW);
+        digitalWrite(LED_PIN, LOW);
+        strobe = 0;
+        siren = 0;
         reset = 0;
-    } else {
-        // Handle individual controls
-        if (strobe == 1) {
-            digitalWrite(pinStrobe, HIGH);
-        }
-        if (strobeOff == 1) {
-            digitalWrite(pinStrobe, LOW);
-            strobeOff = 0;
-        }
-        
-        if (siren == 1) {
-            digitalWrite(pinSiren, HIGH);
-        }
-        if (sirenOff == 1) {
-            digitalWrite(pinSiren, LOW);
-            sirenOff = 0;
-        }
-        
-        // Update LED status
-        if (strobe == 1 || siren == 1) {
-            digitalWrite(LED_PIN, HIGH);
-        } else {
-            digitalWrite(LED_PIN, LOW);
-        }
     }
 
-    delay(100); // Small delay to prevent bouncing or flooding
+    // Update status LED based on any active deterrent
+    digitalWrite(LED_PIN, (strobe == 1 || siren == 1) ? HIGH : LOW);
 }
 
 // Control Functions

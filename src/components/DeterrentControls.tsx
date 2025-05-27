@@ -7,9 +7,9 @@ import { toast } from "sonner"
 import { useWebSocket } from "@/contexts/WebSocketContext"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, StopCircle } from "lucide-react"
 
-type DeterrentMode = 'lights' | 'sound' | 'both'
+type DeterrentMode = 'lights' | 'sound' | 'both' | 'stop'
 
 export function DeterrentControls() {
   const [isActivating, setIsActivating] = useState(false)
@@ -42,7 +42,11 @@ export function DeterrentControls() {
         throw new Error('Failed to activate deterrent')
       }
 
-      toast.success(`${mode.charAt(0).toUpperCase() + mode.slice(1)} deterrent activated`)
+      if (mode === 'stop') {
+        toast.success('All deterrents stopped')
+      } else {
+        toast.success(`${mode.charAt(0).toUpperCase() + mode.slice(1)} deterrent activated`)
+      }
     } catch (error) {
       toast.error('Failed to activate deterrent')
       console.error('Error activating deterrent:', error)
@@ -72,7 +76,7 @@ export function DeterrentControls() {
           )}
         </AnimatePresence>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Button
             variant={isPenguinDetected ? "destructive" : "outline"}
@@ -106,6 +110,19 @@ export function DeterrentControls() {
             )}
           >
             Activate Both
+          </Button>
+        </div>
+        
+        <div className="flex justify-center">
+          <Button
+            variant="destructive"
+            size="lg"
+            disabled={isActivating}
+            onClick={() => activateDeterrent('stop')}
+            className="w-full md:w-1/2"
+          >
+            <StopCircle className="mr-2 h-5 w-5" />
+            Stop All Deterrents
           </Button>
         </div>
       </CardContent>
