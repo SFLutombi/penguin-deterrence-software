@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test:esp32": "node src/lib/esp32/websocket_test.js",
-    "server": "node websocket-server.js"
+    "server": "node websocket-server.js",
+    "deterrent": "node src/lib/deterrent-server.js"
   },
   "keywords": [],
   "author": "",
